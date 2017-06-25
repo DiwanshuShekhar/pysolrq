@@ -18,7 +18,6 @@ q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
 
 It also supports a more complex stats query such as -
 
-
 http://example.company.com:8983/solr/collection_1/select?
 q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
 &stats=true
@@ -44,3 +43,7 @@ query = "field_1:value_1 AND field_2:value_2"
 fields = "field_1,field_2,field_3"
 
 result = collection.fetch(query, fields)
+
+fields = "field_1,field_2"
+
+stats = collection.stats(query, fields)
