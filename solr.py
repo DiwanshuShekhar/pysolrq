@@ -1,30 +1,6 @@
 import requests
 
-"""
-Current host version = 4.7
-Latest version = 6.6
-"""
 
-"""
-Example using stats:
-http://usmlrs720.arrow.com:8983/solr/ape_report_ac/select?
-q=cust_segment_s:* AND prod_segment_s:* AND tran_segment_s:2
-&stats=true
-&stats.calcdistinct=true
-&stats.field=floor_margin_s
-&rows=0
-&wt=json&indent=false
-
-stats.field={!min=true max=true percentiles='99,99.9,99.99'}price
-http://usmlrs720.arrow.com:8983/solr/ape_report_ac/select?
-q=cust_segment_s:*%20AND%20prod_segment_s:*%20AND%20tran_segment_s:2
-&stats=true
-&stats.calcdistinct=true
-&stats.field={!min=true%20max=true%20countDistinct=true}floor_margin_s
-&stats.field={!min=true%20max=true%20countDistinct=true}target_margin_s
-&rows=0
-&wt=json&indent=false
-"""
 
 
 class SolrClient(object):
