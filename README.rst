@@ -34,16 +34,18 @@ q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
 
 **How to use the package**
 
-client = SolrClient("http://example.company.com:8983/solr/")
+    >> from solrq.solr import SolrClient
 
-collection = client.get_collection("collection_1")
+    >> client = SolrClient("http://example.company.com:8983/solr/")
 
-query = "field_1:value_1 AND field_2:value_2"
+    >> collection = client.get_collection("collection_1")
 
-fields = "field_1,field_2,field_3"
+    >> query = "field_1:value_1 AND field_2:value_2"
 
-result = collection.fetch(query, fields)
+    >> fields = "field_1,field_2,field_3"
 
-fields = "field_1,field_2"
+    >> result = collection.fetch(query, fields)
 
-stats = collection.stats(query, fields)
+    >> fields = "field_1,field_2"
+
+    >> stats = collection.stats(query, fields)
