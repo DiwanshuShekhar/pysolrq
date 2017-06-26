@@ -27,6 +27,11 @@ q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
 &rows=0
 &wt=json&indent=false
 
+But you don't need to worry about setting up all these in your code and remember
+the syntax that Apache Solr supports. With solrq installed,
+all you need to do is to let the package know about your query and the fields
+you want in your result, and the package will take care of the details for you.
+
 **How to install the package**
 
 1. Download the package and cd to the installation directory
