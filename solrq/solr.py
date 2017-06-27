@@ -29,6 +29,7 @@ class SolrCollection(SolrClient):
         comma separated list of fields
         :return: None
         """
+
         base_url = self.host + '{0}/select?'.format(self.collection)
         query_params = 'q=' + query + '&fl=' + fields + '&rows=10' + '&wt=json&indent=false'
         full_url = base_url + query_params
@@ -36,20 +37,30 @@ class SolrCollection(SolrClient):
         solr_response = requests.get(full_url).json()
         self.num_found = solr_response['response']['numFound']
     
-    def fetch(self, query, fields, stats=False, ):
+    def fetch(self, query, fields=None, num_rows=None):
         """
         fetches all rows
         :param query: str
         :param fields: str comma separated list of fields
+        :param num_rows: int number of rows to fetch
         :return: a list of dicts or None (if self.num_found exceeds self.max_rows)
         """
+        if fields is None:
+            fields = '*'
+
         self.pre_fetch(query, fields)
 
-        if self.num_found > self.max_rows:
-            return None
+        if num_rows is None:
+            if self.num_found > self.max_rows:
+                return None
+            else:
+                num_rows = self.num_found
+        else:
+            if num_rows > self.num_found:
+                num_rows = self.num_found
 
         base_url = self.host + '{0}/select?'.format(self.collection)
-        query_params = 'q=' + query + '&fl=' + fields + '&rows={0}'.format(self.num_found) + '&wt=json&indent=false'
+        query_params = 'q=' + query + '&fl=' + fields + '&rows={0}'.format(num_rows) + '&wt=json&indent=false'
         full_url = base_url + query_params
         self.last_call = full_url
         solr_response = requests.get(full_url).json()
@@ -126,17 +137,7 @@ class SolrCollection(SolrClient):
         :return: dict
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
-        """
-        http: // usmlrs720.arrow.com:8983 / solr / ape_report_ac / select?
-        q = cust_segment_s:23 + AND + prod_segment_s:171 + AND + tran_segment_s:8
-        &wt = json & indent = false % 20
-        &facet=true 
-        &facet.range = margin_d
-        &f.margin_d.facet.range.start = 0
-        &f.margin_d.facet.range.end = 1
-        &f.margin_d.facet.range.gap = 0.05
-        &rows = 0
-        """
+
         field_value = ''
         for field in field_params.keys():
             field_value = field_value + '&facet.range=' + field
