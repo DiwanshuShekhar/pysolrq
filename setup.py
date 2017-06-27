@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-with open('./solrq/README.rst') as fh:
+with open('README.rst') as fh:
     long_description = fh.read()
 
 
