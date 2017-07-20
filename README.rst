@@ -1,12 +1,12 @@
 **About the package**
 
 A very lightweight python package to query Apache Solr indexes. The package supports
-simple queries such as -
+simple queries such as -::
 
 http://example.company.com:8983/solr/collection_1/select?
 q=field_1:value_1 AND field_2:value_2&wt=json&indent=true
 
-and also stats such as -
+and also stats such as -::
 
 http://example.company.com:8983/solr/collection_1/select?
 q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
@@ -16,7 +16,7 @@ q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
 &rows=0
 &wt=json&indent=false
 
-It also supports a more complex stats query such as -
+It also supports a more complex stats query such as -::
 
 http://example.company.com:8983/solr/collection_1/select?
 q=field_1:value_1 AND field_2:value_2 AND field_3:value_3
@@ -38,19 +38,19 @@ you want in your result, and the package will take care of the details for you.
 2. python setup.py install
 
 **How to use the package**
+``>> from solrq.solr import SolrClient
 
-    >> from solrq.solr import SolrClient
+  >> client = SolrClient("http://example.company.com:8983/solr/")
 
-    >> client = SolrClient("http://example.company.com:8983/solr/")
+  >> collection = client.get_collection("collection_1")
 
-    >> collection = client.get_collection("collection_1")
+  >> query = "field_1:value_1 AND field_2:value_2"
 
-    >> query = "field_1:value_1 AND field_2:value_2"
+  >> fields = "field_1,field_2,field_3"
 
-    >> fields = "field_1,field_2,field_3"
+  >> result = collection.fetch(query, fields)
 
-    >> result = collection.fetch(query, fields)
+  >> fields = "field_1,field_2"
 
-    >> fields = "field_1,field_2"
+  >> stats = collection.stats(query, fields)``
 
-    >> stats = collection.stats(query, fields)

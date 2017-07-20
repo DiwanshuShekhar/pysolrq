@@ -1,20 +1,64 @@
 import requests
+import uuid
+import xmltodict
 
 
 class SolrClient(object):
 
     def __init__(self, host, version=4.7):
+        """
+        Constructor for SolrClient
+
+        :param host: string
+                Solr host Example:http://example.company.com:8983/solr/
+        :param version: float, default = 4.7
+                Current version of Solr host
+        """
         self.host = host
         self.version = version
 
     def get_collection(self, collection, max_rows=50000):
+        """
+        Generator method to return SolrCollection
+        :param collection: string
+                    name of Solr collection
+        :param max_rows: int, default = 50000
+                    maximum rows to fetch
+        :return: SolrCollection object
+        """
 
         return SolrCollection(self.host, collection, max_rows)
 
+    def get_control(self, collection):
+        """
+        Generator method to return SolrCollection
+        :param collection: string
+                    name of Solr collection
+        :return: SolrIndexer object
+        """
+
+        return SolrControl(self.host, collection)
+
 
 class SolrCollection(SolrClient):
+    """
+    SolrCollection class
+    Never have to be instantiated directly. get_collection method of
+    SolrClient object instantiates SolrCollection object
+    """
 
     def __init__(self, host, collection, max_rows=50000):
+        """
+        Constructor for SolrCollection
+        :param host: string
+                Solr host Example:http://example.company.com:8983/solr/
+
+        :param collection: string
+                name of Solr collection
+
+        :param max_rows:
+                maximum rows to fetch
+        """
         SolrClient.__init__(self, host)
         self.collection = collection
         self.max_rows = max_rows
@@ -25,8 +69,10 @@ class SolrCollection(SolrClient):
         """
         fetches the first 10 rows
         :param query: str
+                Query string. Example: 'field1:val1 AND field2:val2'
         :param fields: str
-        comma separated list of fields
+                comma separated list of fields. Example: [field1, field3]
+
         :return: None
         """
 
@@ -41,9 +87,15 @@ class SolrCollection(SolrClient):
         """
         fetches all rows
         :param query: str
-        :param fields: str comma separated list of fields
-        :param num_rows: int number of rows to fetch
-        :return: a list of dicts or None (if self.num_found exceeds self.max_rows)
+                    Query string. Example: 'field1:val1 AND field2:val2'
+
+        :param fields: str
+                    comma separated list of fields. Example: [field1, field3]
+
+        :param num_rows: int
+                        number of rows to fetch
+
+        :return: a list of dicts or None if self.num_found exceeds self.max_rows
         """
         if fields is None:
             fields = '*'
@@ -75,14 +127,21 @@ class SolrCollection(SolrClient):
         """
         Gets basic statistics using Solr stats
         :param query: str
-        :param fields: str comma separated list of fields to compute stats on
+                    Query string. Example: 'field1:val1 AND field2:val2'
+
+        :param fields: str
+                    comma separated list of fields to compute stats on. Example: [field1, field3]
+
         :param metrics: list of str list of metrics to be used
-        Must be in ['min', 'max', 'sum', 'count', 'missing', 'sumOfSquares'
+                    Must be in ['min', 'max', 'sum', 'count', 'missing', 'sumOfSquares'
                     'mean', 'stddev', 'percentiles', 'distinctValues', 'countDistinct',
                     'cardinality'
                    ]
-        :param percentiles str comma cut-off points to calculate percentiles
+
+        :param percentiles:
+                    string of numbers separated by commas to calculate percentiles at
         Uses t-digest approximation algorithm
+
         :return: dict with metrics as keys
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
@@ -132,8 +191,12 @@ class SolrCollection(SolrClient):
         """
         Get facet results using Solr Facets
         :param query: str
-        :param field_params: dict {field_1:[start, end, gap, include], field_2:[start, end, gap, include]}
+
+        :param field_params: dict
+                        Example: {field_1:[start, end, gap, include], field_2:[start, end, gap, include]}
+
         :param bins: int
+
         :return: dict
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
@@ -162,4 +225,77 @@ class SolrCollection(SolrClient):
     def __str__(self):
         base_url = self.host + '{0}/select?'.format(self.collection)
         return base_url
+
+
+class SolrControl(SolrClient):
+
+    def __init__(self, host, collection):
+        """
+
+        :param host:
+        :param collection:
+        """
+        SolrClient.__init__(self, host)
+        self.collection = collection
+
+    def make_collection(self, num_shards):
+        """
+        This assumes that the user has already uploaded the configuration to zookeeper
+        :param name: name of the collection
+        :param num_shards: number of shards for the collection
+        :return: None
+        """
+        url = self.host + "admin/collections" + "?action=create&name={0}&numShards={1}"
+        url = url.format(self.collection, num_shards)
+        print url
+        response = requests.get(url)
+        print response
+
+    def start_index(self, file_path, file_format='solrxml'):
+        """
+        Indexes data to its collection
+        :param file_path: str
+        :param file_format: str
+        :return: None
+        """
+        url = self.host + self.collection + "/update/"
+        #data1 = "<add><doc><field name='id'>{0}</field><field name='statement_s'>'How is it going?'</field><field name='response_s'>'It is good'</field></doc><doc><field name='id'>1234</field><field name='statement_s'>'How is it going-2?'</field><field name='response_s'>'It is good'</field></doc></add>".format(str(uuid.uuid4()))
+        #print data1
+        headers = {'Content-type': 'text/xml'}
+        #requests.post(url, data=data1, headers=headers)
+        data = self._xmltostr(file_path)
+        print data
+        requests.post(url, data=data, headers=headers)
+
+    def _xmltostr(self, file_path):
+        """
+
+        :param file_path:
+        :return: str
+        """
+        string = ""
+        fh = open(file_path, 'r')
+        for line in fh:
+            string = string + line.strip(' ').rstrip('\n')
+
+        fh.close()
+        return string
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

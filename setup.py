@@ -5,7 +5,7 @@ with open('README.rst') as fh:
 
 
 setup(name='solrq',
-      version='1.0.0',
+      version='1.0.1',
       author='Diwanshu Shekhar',
       author_email='diwanshu@gmail.com',
       url='https://github.com/DiwanshuShekhar/solrq',
