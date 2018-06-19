@@ -1,4 +1,4 @@
-#About solrq
+# About solrq
 
 A very lightweight python package to query Apache Solr indexes. The package supports
 simple queries such as:
@@ -36,14 +36,14 @@ the syntax that Apache Solr supports. With solrq installed,
 all you need to do is to let the package know about your query and the fields
 you want in your result, and the package will take care of the details for you.
 
-##How to install the package
+## How to install the package
 
 Download the package and cd to the installation directory and run:
 ```
 python setup.py install
 ```
 
-##How to use the package
+## How to use the package
 
 ```python
   from solrq.solr import SolrClient
