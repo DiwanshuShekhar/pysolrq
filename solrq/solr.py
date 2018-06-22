@@ -1,6 +1,8 @@
 import requests
+import csv
 import uuid
-import xmltodict
+import multiprocessing as mp
+import time
 
 
 class SolrClient(object):
@@ -240,7 +242,7 @@ class SolrControl(SolrClient):
 
     def make_collection(self, num_shards):
         """
-        This assumes that the user has already uploaded the configuration to zookeeper
+        This assumes that the user has already uploaded the collection's configuration to zookeeper
         :param name: name of the collection
         :param num_shards: number of shards for the collection
         :return: None
@@ -251,20 +253,33 @@ class SolrControl(SolrClient):
         response = requests.get(url)
         print response
 
-    def start_index(self, file_path, file_format='solrxml'):
+    def start_index(self, file_path, file_format='solrxml', delimiter=None, fields=None):
         """
         Indexes data to its collection
         :param file_path: str
         :param file_format: str
+        :param delimiter: None or str. Required when file_format='csv'
+        :param fields
         :return: None
         """
+        pool = mp.Pool()  # if processes argument is None, it will use cpu_count
+
+        if file_format == 'solrxml':
+            data = self._xmltostr(file_path)
+            self._post_to_collection(data)
+
+        if file_format == 'csv':
+            if delimiter is not None and fields is not None:
+                data_gen = self._data_iter(file_path, delimiter=delimiter, fields=fields)
+                for data in data_gen:
+                    pool.apply_async(self._post_to_collection, args=(data,))
+                    # self._post_to_collection(data)
+            else:
+                raise "csv file_format must have not None delimiter"
+
+    def _post_to_collection(self, data):
         url = self.host + self.collection + "/update/"
-        #data1 = "<add><doc><field name='id'>{0}</field><field name='statement_s'>'How is it going?'</field><field name='response_s'>'It is good'</field></doc><doc><field name='id'>1234</field><field name='statement_s'>'How is it going-2?'</field><field name='response_s'>'It is good'</field></doc></add>".format(str(uuid.uuid4()))
-        #print data1
         headers = {'Content-type': 'text/xml'}
-        #requests.post(url, data=data1, headers=headers)
-        data = self._xmltostr(file_path)
-        print data
         requests.post(url, data=data, headers=headers)
 
     def _xmltostr(self, file_path):
@@ -280,6 +295,47 @@ class SolrControl(SolrClient):
 
         fh.close()
         return string
+
+    def _data_iter(self, file_path, delimiter=None, fields=None):
+        csv_gen = self._csv_iter(file_path, delimiter=delimiter)
+        for values in csv_gen:
+            values = self._clean(values)
+            data = self._get_data(values, fields)
+            yield data
+
+    def _csv_iter(self, filename, delimiter=','):
+        """
+
+        :param file_path: str
+        :param delimiter: str
+        :return: generator
+        """
+        with open(filename) as fh:
+            reader = csv.reader(fh, delimiter=delimiter)
+            for row in reader:
+                yield row
+
+    def _get_data(self, values, fields):
+        d = {}
+        for idx, value in enumerate(values):
+            d[fields[idx]] = value
+        return "<add>" + self._get_doc(d) + "</add>"
+
+    def _get_doc(self, d):
+        """
+
+        :param d: dict of field names and value pairs
+        :return:
+        """
+        docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
+        for k, v in d.items():
+            docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
+
+        return "<doc>" + docs + "</doc>"
+
+    def _clean(self, values):
+        return [value.strip() for value in values]
+
 
 
 
