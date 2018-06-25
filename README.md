@@ -65,4 +65,4 @@ python setup.py install
 
 ## API Documentation
 
-Click [here](./doc/build/html/index.html) for API documentation
+Click [here](doc/build/html/index.html) for API documentation
