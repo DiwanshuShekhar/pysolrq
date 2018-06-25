@@ -62,3 +62,7 @@ python setup.py install
 
   stats = collection.stats(query, fields)
 ```
+
+## API Documentation
+
+Click [here](./doc/build/html/index.html) for API documentation

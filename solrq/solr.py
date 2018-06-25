@@ -22,11 +22,13 @@ class SolrClient(object):
     def get_collection(self, collection, max_rows=50000):
         """
         Generator method to return SolrCollection
+
         :param collection: string
                     name of Solr collection
         :param max_rows: int, default = 50000
                     maximum rows to fetch
-        :return: SolrCollection object
+
+        :returns: SolrCollection object
         """
 
         return SolrCollection(self.host, collection, max_rows)
@@ -34,9 +36,11 @@ class SolrClient(object):
     def get_control(self, collection):
         """
         Generator method to return SolrCollection
+
         :param collection: string
                     name of Solr collection
-        :return: SolrIndexer object
+
+        :returns: SolrIndexer object
         """
 
         return SolrControl(self.host, collection)
@@ -52,12 +56,11 @@ class SolrCollection(SolrClient):
     def __init__(self, host, collection, max_rows=50000):
         """
         Constructor for SolrCollection
+
         :param host: string
                 Solr host Example:http://example.company.com:8983/solr/
-
         :param collection: string
                 name of Solr collection
-
         :param max_rows:
                 maximum rows to fetch
         """
@@ -70,12 +73,13 @@ class SolrCollection(SolrClient):
     def pre_fetch(self, query, fields):
         """
         fetches the first 10 rows
+
         :param query: str
                 Query string. Example: 'field1:val1 AND field2:val2'
         :param fields: str
                 comma separated list of fields. Example: [field1, field3]
 
-        :return: None
+        :returns: None
         """
 
         base_url = self.host + '{0}/select?'.format(self.collection)
@@ -88,16 +92,15 @@ class SolrCollection(SolrClient):
     def fetch(self, query, fields=None, num_rows=None):
         """
         fetches all rows
+
         :param query: str
                     Query string. Example: 'field1:val1 AND field2:val2'
-
         :param fields: str
                     comma separated list of fields. Example: [field1, field3]
-
         :param num_rows: int
                         number of rows to fetch
 
-        :return: a list of dicts or None if self.num_found exceeds self.max_rows
+        :returns: a list of dicts or None if self.num_found exceeds self.max_rows
         """
         if fields is None:
             fields = '*'
@@ -126,25 +129,20 @@ class SolrCollection(SolrClient):
                              'mean', 'stddev', 'percentiles', 'distinctValues', 'countDistinct',
                              'cardinality'],
               percentiles="25,50,75"):
-        """
-        Gets basic statistics using Solr stats
+        """Gets basic statistics using Solr stats
+
         :param query: str
-                    Query string. Example: 'field1:val1 AND field2:val2'
-
-        :param fields: str
-                    comma separated list of fields to compute stats on. Example: [field1, field3]
-
+                    Example: 'field1:val1 AND field2:val2'
+        :param fields: str. comma separated list of fields to compute stats on.
+                    Example: [field1, field3]
         :param metrics: list of str list of metrics to be used
                     Must be in ['min', 'max', 'sum', 'count', 'missing', 'sumOfSquares'
                     'mean', 'stddev', 'percentiles', 'distinctValues', 'countDistinct',
-                    'cardinality'
-                   ]
+                    'cardinality']
+        :param percentiles: string of numbers separated by commas to calculate percentiles at
+                    Uses t-digest approximation algorithm
 
-        :param percentiles:
-                    string of numbers separated by commas to calculate percentiles at
-        Uses t-digest approximation algorithm
-
-        :return: dict with metrics as keys
+        :returns: dict with metrics as keys
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
         fields = fields.split(',')
@@ -190,8 +188,7 @@ class SolrCollection(SolrClient):
         return documents
 
     def facet_range(self, query, field_params):
-        """
-        Get facet results using Solr Facets
+        """Get facet results using Solr Facets
         :param query: str
 
         :param field_params: dict
@@ -199,7 +196,7 @@ class SolrCollection(SolrClient):
 
         :param bins: int
 
-        :return: dict
+        :returns: dict
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
 
@@ -243,9 +240,11 @@ class SolrControl(SolrClient):
     def make_collection(self, num_shards):
         """
         This assumes that the user has already uploaded the collection's configuration to zookeeper
+
         :param name: name of the collection
         :param num_shards: number of shards for the collection
-        :return: None
+
+        :returns: None
         """
         url = self.host + "admin/collections" + "?action=create&name={0}&numShards={1}"
         url = url.format(self.collection, num_shards)
@@ -256,11 +255,13 @@ class SolrControl(SolrClient):
     def start_index(self, file_path, file_format='solrxml', delimiter=None, fields=None):
         """
         Indexes data to its collection
+
         :param file_path: str
         :param file_format: str
         :param delimiter: None or str. Required when file_format='csv'
-        :param fields
-        :return: None
+        :param fields: list of str. A list of field names
+
+        :returns: None
         """
         pool = mp.Pool()  # if processes argument is None, it will use cpu_count
 
