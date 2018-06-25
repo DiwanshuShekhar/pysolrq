@@ -1,0 +1,7 @@
+solrq
+=====
+
+.. toctree::
+   :maxdepth: 4
+
+   solrq
