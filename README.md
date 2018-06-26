@@ -1,4 +1,4 @@
-# About solrq
+# About pysolrq
 
 A very lightweight python package to query Apache Solr indexes. The package supports
 simple queries such as:
@@ -65,4 +65,4 @@ python setup.py install
 
 ## API Documentation
 
-Click [here](doc/build/html/index.html) for API documentation
+Click [here](https://pysolrq.readthedocs.io/en/latest/?) for API documentation

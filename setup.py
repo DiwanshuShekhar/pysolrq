@@ -4,7 +4,7 @@ with open('README.rst') as fh:
     long_description = fh.read()
 
 
-setup(name='solrq',
+setup(name='pysolrq',
       version='1.0.1',
       author='Diwanshu Shekhar',
       author_email='diwanshu@gmail.com',
@@ -12,6 +12,6 @@ setup(name='solrq',
       description ='Extremely lightweight package to query Apache Solr indexes',
       long_description=long_description,
       requires=['requests'],
-      packages=['solrq'],
+      packages=['pysolrq'],
       #py_modules=['solr'],
       )
