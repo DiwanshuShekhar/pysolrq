@@ -8,61 +8,72 @@ import time
 class SolrClient(object):
 
     def __init__(self, host, version=4.7):
-        """
-        Constructor for SolrClient
+        """Constructor for SolrClient class
 
-        :param host: string
-                Solr host Example:http://example.company.com:8983/solr/
-        :param version: float, default = 4.7
-                Current version of Solr host
+        Parameters
+        ----------
+
+        host : str
+            Solr host
+            Example:http://example.company.com:8983/solr/
+        version : float
+            Current version of Solr host, default=4.7
         """
         self.host = host
         self.version = version
 
     def get_collection(self, collection, max_rows=50000):
-        """
-        Generator method to return SolrCollection
+        """Factory method to return SolrCollection object
 
-        :param collection: string
-                    name of Solr collection
-        :param max_rows: int, default = 50000
-                    maximum rows to fetch
+        Parameters
+        ----------
+        collection : str
+            name of Solr collection
+        max_rows : int
+            maximum rows to fetch, default=50,000
 
-        :returns: SolrCollection object
+        Returns
+        -------
+            SolrCollection
         """
 
         return SolrCollection(self.host, collection, max_rows)
 
     def get_control(self, collection):
-        """
-        Generator method to return SolrCollection
+        """Factory method to return SolrControl object
 
-        :param collection: string
-                    name of Solr collection
+        Parameters
+        ----------
+        collection : str
+            name of Solr collection
 
-        :returns: SolrIndexer object
+        Returns
+        -------
+            SolrControl
         """
 
         return SolrControl(self.host, collection)
 
 
 class SolrCollection(SolrClient):
-    """
-    SolrCollection class
-    Never have to be instantiated directly. get_collection method of
-    SolrClient object instantiates SolrCollection object
+    """SolrCollection class
+
+    Should not be instantiated directly. Use get_collection method of
+    SolrClient object to get SolrCollection object
     """
 
     def __init__(self, host, collection, max_rows=50000):
-        """
-        Constructor for SolrCollection
+        """Constructor for SolrCollection class
 
-        :param host: string
-                Solr host Example:http://example.company.com:8983/solr/
-        :param collection: string
-                name of Solr collection
-        :param max_rows:
-                maximum rows to fetch
+        Parameters
+        ----------
+        host : str
+            Solr host
+            Example:http://example.company.com:8983/solr/
+        collection : str
+            name of Solr collection
+        max_rows : int
+            maximum rows to fetch
         """
         SolrClient.__init__(self, host)
         self.collection = collection
@@ -71,15 +82,20 @@ class SolrCollection(SolrClient):
         self.num_found = 0
 
     def pre_fetch(self, query, fields):
-        """
-        fetches the first 10 rows
+        """Fetches the first 10 rows from returned results from your Solr collection
 
-        :param query: str
-                Query string. Example: 'field1:val1 AND field2:val2'
-        :param fields: str
-                comma separated list of fields. Example: [field1, field3]
+        Parameters
+        ----------
+        query : str
+            Query string
+            Example: ``'field1':'val1' AND 'field2':'val2'``
+        fields : list of str
+            comma separated list of field names
+            Example: ``['field1', 'field3']``
 
-        :returns: None
+        Returns
+        -------
+            None
         """
 
         base_url = self.host + '{0}/select?'.format(self.collection)
@@ -90,17 +106,25 @@ class SolrCollection(SolrClient):
         self.num_found = solr_response['response']['numFound']
     
     def fetch(self, query, fields=None, num_rows=None):
-        """
-        fetches all rows
+        """Fetches all rows from returned results from your Solr collection
 
-        :param query: str
-                    Query string. Example: 'field1:val1 AND field2:val2'
-        :param fields: str
-                    comma separated list of fields. Example: [field1, field3]
-        :param num_rows: int
-                        number of rows to fetch
+        Parameters
+        ----------
+        query : str
+            Query string
+            Example: ``'field1':'val1' AND 'field2':'val2'``
+        fields : list of str
+            comma separated list of field names
+            Example: ``['field1', 'field3']``
+        num_rows : int
+            number of rows to fetch
 
-        :returns: a list of dicts or None if self.num_found exceeds self.max_rows
+        Returns
+        -------
+            list
+                a list of dicts
+            None
+                if self.num_found exceeds self.max_rows
         """
         if fields is None:
             fields = '*'
@@ -129,20 +153,30 @@ class SolrCollection(SolrClient):
                              'mean', 'stddev', 'percentiles', 'distinctValues', 'countDistinct',
                              'cardinality'],
               percentiles="25,50,75"):
-        """Gets basic statistics using Solr stats
+        """Gets basic statistics from Solr
 
-        :param query: str
-                    Example: 'field1:val1 AND field2:val2'
-        :param fields: str. comma separated list of fields to compute stats on.
-                    Example: [field1, field3]
-        :param metrics: list of str list of metrics to be used
-                    Must be in ['min', 'max', 'sum', 'count', 'missing', 'sumOfSquares'
-                    'mean', 'stddev', 'percentiles', 'distinctValues', 'countDistinct',
-                    'cardinality']
-        :param percentiles: string of numbers separated by commas to calculate percentiles at
-                    Uses t-digest approximation algorithm
+        Parameters
+        ----------
 
-        :returns: dict with metrics as keys
+        query : str
+            Query string::
+            Example: ``'field1':'val1' AND 'field2':'val2'``
+        fields : list of str
+            comma separated list of field names::
+            Example: ``['field1', 'field3']``
+        metrics : list of str
+            list of available metrics are: 'min', 'max', 'sum', 'count', 'missing',
+            'sumOfSquares', 'mean', 'stddev', 'percentiles', 'distinctValues',
+            'countDistinct', 'cardinality'
+        percentiles : str
+            A string where different percentile values are separated by commas
+            Example: ``"25,50,75"``
+            Note: Uses t-digest approximation algorithm
+
+        Returns
+        -------
+            dict
+                A dictionary with metrics as keys
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
         fields = fields.split(',')
@@ -189,14 +223,19 @@ class SolrCollection(SolrClient):
 
     def facet_range(self, query, field_params):
         """Get facet results using Solr Facets
-        :param query: str
 
-        :param field_params: dict
-                        Example: {field_1:[start, end, gap, include], field_2:[start, end, gap, include]}
+        Parameters
+        ----------
+        query : str
+            Query string
+            Example: ``'field1':'val1' AND 'field2':'val2'``
+        field_params : dict
+            Example: ``{field_1:[start, end, gap, include], field_2:[start, end, gap, include]}``
+        bins : int
 
-        :param bins: int
-
-        :returns: dict
+        Returns
+        -------
+            dict
         """
         base_url = self.host + '{0}/select?'.format(self.collection)
 
@@ -227,24 +266,53 @@ class SolrCollection(SolrClient):
 
 
 class SolrControl(SolrClient):
+    """SolrControl class can be used to make collections
+    and perform indexing of your data.
+
+    The data can be in a delimited file such as CSV or
+    a Solr acceptable xml format such as::
+
+        <add>
+            <doc>
+                <field name="id">001</field>
+                <field name="food">milk</field>
+                <field name="talk">meow</field>
+            </doc>
+            <doc>
+                <field name="id">002</field>
+                <field name="food">bone</field>
+                <field name="talk">bark</field>
+            </doc>
+        </add>
+    """
 
     def __init__(self, host, collection):
-        """
+        """Constructor for SorControl class
 
-        :param host:
-        :param collection:
+        Parameters
+        ----------
+        host : str
+            Solr host
+            Example:http://example.company.com:8983/solr/
+        collection : str
+            name of Solr collection
         """
         SolrClient.__init__(self, host)
         self.collection = collection
 
     def make_collection(self, num_shards):
-        """
-        This assumes that the user has already uploaded the collection's configuration to zookeeper
+        """Makes a new collection
+        This assumes that the user has already uploaded the
+        collection's configuration to zookeeper
 
-        :param name: name of the collection
-        :param num_shards: number of shards for the collection
+        Parameters
+        ----------
+        num_shards : int
+            number of shards for the collection
 
-        :returns: None
+        Returns
+        -------
+            None
         """
         url = self.host + "admin/collections" + "?action=create&name={0}&numShards={1}"
         url = url.format(self.collection, num_shards)
@@ -253,15 +321,23 @@ class SolrControl(SolrClient):
         print response
 
     def start_index(self, file_path, file_format='solrxml', delimiter=None, fields=None):
-        """
-        Indexes data to its collection
+        """Indexes data to the collection
 
-        :param file_path: str
-        :param file_format: str
-        :param delimiter: None or str. Required when file_format='csv'
-        :param fields: list of str. A list of field names
+        Parameters
+        ----------
+        file_path : str
+            Points to a file with data to be indexed
+        file_format : str
+            Available choices are 'solrxml' or 'csv'.
+        delimiter : str
+            Required when file_format='csv'. Example: ``","``
+        fields : list of str.
+            A list of field names to be used for indexing
+            Example: ``['field1', 'field3']``
 
-        :returns: None
+        Returns
+        -------
+            None
         """
         pool = mp.Pool()  # if processes argument is None, it will use cpu_count
 
@@ -279,15 +355,24 @@ class SolrControl(SolrClient):
                 raise "csv file_format must have not None delimiter"
 
     def _post_to_collection(self, data):
+        """Given the ``data`` in Solr acceptable xml format posts the data
+        to the Solr Collection
+        """
         url = self.host + self.collection + "/update/"
         headers = {'Content-type': 'text/xml'}
         requests.post(url, data=data, headers=headers)
 
     def _xmltostr(self, file_path):
-        """
+        """Reads a solrxml file and converts it to a string
 
-        :param file_path:
-        :return: str
+        Parameters
+        ----------
+        file_path : str
+            An xml file
+
+        Returns
+        -------
+            str
         """
         string = ""
         fh = open(file_path, 'r')
@@ -298,6 +383,40 @@ class SolrControl(SolrClient):
         return string
 
     def _data_iter(self, file_path, delimiter=None, fields=None):
+        """Returns a generator of the read delimited file
+
+        Parameters
+        ----------
+        file_path : str
+            A delimited file
+        delimiter : str
+            Example: ``","``
+        fields : list of str.
+            A list of field names to be used for indexing
+            Example: ``['field1', 'field3']``
+
+        Yields
+        -------
+            str
+                The next str is an xml formatted str with values
+                read from a row in the ``file_path`` file.
+                Example:
+                if a delimited file contains a row as::
+
+                    "cat", "milk", "meow"
+
+                this method will yield::
+
+                    <add>
+                        <doc>
+                            <field name="id">3d144141'</field>
+                            <field name="food">Hi</field>
+                            <field name="talk">Hello</field>
+                        </doc>
+                    </add>
+
+                assuming the given fields are ``["food", "talk"]``
+        """
         csv_gen = self._csv_iter(file_path, delimiter=delimiter)
         for values in csv_gen:
             values = self._clean(values)
@@ -305,11 +424,19 @@ class SolrControl(SolrClient):
             yield data
 
     def _csv_iter(self, filename, delimiter=','):
-        """
+        """Returns a generator of the read delimited file
 
-        :param file_path: str
-        :param delimiter: str
-        :return: generator
+        Parameters
+        ----------
+        filename : str
+            A delimited file
+        delimiter : str
+            Example: ``","``
+
+        Yields
+        -------
+            list
+                The next list of values read in a row in the given delimited file
         """
         with open(filename) as fh:
             reader = csv.reader(fh, delimiter=delimiter)
@@ -317,16 +444,29 @@ class SolrControl(SolrClient):
                 yield row
 
     def _get_data(self, values, fields):
+        """Given the values and fields, returns an str in
+        Solr acceptable xml format
+
+        Parameters
+        ----------
+        values : list
+            list of some data
+        fields : list of str
+            A list of field names to be used for indexing::
+            Example: ``['field1', 'field3']``
+
+        Returns
+        -------
+            str
+        """
         d = {}
         for idx, value in enumerate(values):
             d[fields[idx]] = value
         return "<add>" + self._get_doc(d) + "</add>"
 
     def _get_doc(self, d):
-        """
-
-        :param d: dict of field names and value pairs
-        :return:
+        """Given a dictionary of  values and fields, returns an str
+        to be used by ``_get_data`` method
         """
         docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
         for k, v in d.items():
@@ -335,6 +475,19 @@ class SolrControl(SolrClient):
         return "<doc>" + docs + "</doc>"
 
     def _clean(self, values):
+        """Cleans the data in ``values``
+
+        Parameters
+        ----------
+        values : list
+            list of some data
+
+        Returns
+        -------
+            list
+                A list of values in ``values`` with leading and trailing
+                whitespaces removed
+        """
         return [value.strip() for value in values]
 
 

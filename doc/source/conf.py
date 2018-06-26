@@ -43,6 +43,7 @@ release = u'1.0.2'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',  # extension that can read numpy or Google style docstring
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
