@@ -46,7 +46,7 @@ python setup.py install
 ## How to use the package
 
 ```python
-  from solrq.solr import SolrClient
+  from pysolrq.solr import SolrClient
 
   client = SolrClient("http://example.company.com:8983/solr/")
 
