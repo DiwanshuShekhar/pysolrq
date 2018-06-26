@@ -489,23 +489,3 @@ class SolrControl(SolrClient):
                 whitespaces removed
         """
         return [value.strip() for value in values]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
