@@ -252,7 +252,7 @@ class SolrCollection(SolrClient):
         full_url = base_url + query_params
         self.last_call = full_url
         solr_response = requests.get(full_url).json()
-        print solr_response
+        print(solr_response)
         documents = solr_response['facet_counts']['facet_ranges']
         return documents
 
@@ -316,9 +316,8 @@ class SolrControl(SolrClient):
         """
         url = self.host + "admin/collections" + "?action=create&name={0}&numShards={1}"
         url = url.format(self.collection, num_shards)
-        print url
         response = requests.get(url)
-        print response
+        print(response)
 
     def start_index(self, file_path, file_format='solrxml', delimiter=None, fields=None):
         """Indexes data to the collection
@@ -351,6 +350,8 @@ class SolrControl(SolrClient):
                 for data in data_gen:
                     pool.apply_async(self._post_to_collection, args=(data,))
                     # self._post_to_collection(data)
+                pool.close()
+                pool.join()
             else:
                 raise "csv file_format must have not None delimiter"
 
@@ -361,6 +362,7 @@ class SolrControl(SolrClient):
         url = self.host + self.collection + "/update/"
         headers = {'Content-type': 'text/xml'}
         requests.post(url, data=data, headers=headers)
+        print("post")
 
     def _xmltostr(self, file_path):
         """Reads a solrxml file and converts it to a string
