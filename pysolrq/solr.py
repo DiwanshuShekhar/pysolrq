@@ -362,7 +362,6 @@ class SolrControl(SolrClient):
         url = self.host + self.collection + "/update/"
         headers = {'Content-type': 'text/xml'}
         requests.post(url, data=data, headers=headers)
-        print("post")
 
     def _xmltostr(self, file_path):
         """Reads a solrxml file and converts it to a string
