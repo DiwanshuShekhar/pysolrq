@@ -319,7 +319,8 @@ class SolrControl(SolrClient):
         response = requests.get(url)
         print(response)
 
-    def start_index(self, file_path, file_format='solrxml', delimiter=None, fields=None):
+    def start_index(self, file_path, file_format='solrxml',
+                    delimiter=None, fields=None, unique_id=True):
         """Indexes data to the collection
 
         Parameters
@@ -333,6 +334,9 @@ class SolrControl(SolrClient):
         fields : list of str.
             A list of field names to be used for indexing
             Example: ``['field1', 'field3']``
+        unique_id : bool
+            If True, autogenerates a field name id and a unique uuid value to the doc
+            If False, modify the Solr config so that id is not a unique key
 
         Returns
         -------
@@ -346,7 +350,9 @@ class SolrControl(SolrClient):
 
         if file_format == 'csv':
             if delimiter is not None and fields is not None:
-                data_gen = self._data_iter(file_path, delimiter=delimiter, fields=fields)
+                data_gen = self._data_iter(file_path, delimiter=delimiter,
+                                           fields=fields,
+                                           unique_id=unique_id)
                 for data in data_gen:
                     pool.apply_async(self._post_to_collection, args=(data,))
                     # self._post_to_collection(data)
@@ -383,7 +389,7 @@ class SolrControl(SolrClient):
         fh.close()
         return string
 
-    def _data_iter(self, file_path, delimiter=None, fields=None):
+    def _data_iter(self, file_path, delimiter=None, fields=None, unique_id=True):
         """Returns a generator of the read delimited file
 
         Parameters
@@ -421,7 +427,7 @@ class SolrControl(SolrClient):
         csv_gen = self._csv_iter(file_path, delimiter=delimiter)
         for values in csv_gen:
             values = self._clean(values)
-            data = self._get_data(values, fields)
+            data = self._get_data(values, fields, unique_id=unique_id)
             yield data
 
     def _csv_iter(self, filename, delimiter=','):
@@ -444,7 +450,7 @@ class SolrControl(SolrClient):
             for row in reader:
                 yield row
 
-    def _get_data(self, values, fields):
+    def _get_data(self, values, fields, unique_id=True):
         """Given the values and fields, returns an str in
         Solr acceptable xml format
 
@@ -463,13 +469,16 @@ class SolrControl(SolrClient):
         d = {}
         for idx, value in enumerate(values):
             d[fields[idx]] = value
-        return "<add>" + self._get_doc(d) + "</add>"
+        return "<add>" + self._get_doc(d, unique_id=unique_id) + "</add>"
 
-    def _get_doc(self, d):
-        """Given a dictionary of  values and fields, returns an str
+    def _get_doc(self, d, unique_id=True):
+        """Given a dictionary of  fields and values, returns an str
         to be used by ``_get_data`` method
         """
-        docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
+        docs = ""
+        if unique_id:
+            docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
+
         for k, v in d.items():
             docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
 
