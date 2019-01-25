@@ -320,7 +320,7 @@ class SolrControl(SolrClient):
         print(response)
 
     def start_index(self, file_path, file_format='solrxml',
-                    delimiter=None, fields=None, unique_id=True):
+                    delimiter=None, fields=None, unique_id=True, keep_row=False):
         """Indexes data to the collection
 
         Parameters
@@ -352,10 +352,12 @@ class SolrControl(SolrClient):
             if delimiter is not None and fields is not None:
                 data_gen = self._data_iter(file_path, delimiter=delimiter,
                                            fields=fields,
-                                           unique_id=unique_id)
+                                           unique_id=unique_id,
+                                           keep_row=keep_row)
                 for data in data_gen:
                     pool.apply_async(self._post_to_collection, args=(data,))
-                    # self._post_to_collection(data)
+                    self._post_to_collection(data)
+                    #print(data)
                 pool.close()
                 pool.join()
             else:
@@ -389,7 +391,8 @@ class SolrControl(SolrClient):
         fh.close()
         return string
 
-    def _data_iter(self, file_path, delimiter=None, fields=None, unique_id=True):
+    def _data_iter(self, file_path, delimiter=None, fields=None,
+                   unique_id=True, keep_row=False):
         """Returns a generator of the read delimited file
 
         Parameters
@@ -424,9 +427,16 @@ class SolrControl(SolrClient):
 
                 assuming the given fields are ``["food", "talk"]``
         """
+        if keep_row:
+            fields.append("row")
+
         csv_gen = self._csv_iter(file_path, delimiter=delimiter)
         for values in csv_gen:
             values = self._clean(values)
+
+            if keep_row:
+                values.append("|".join(values))
+
             data = self._get_data(values, fields, unique_id=unique_id)
             yield data
 

@@ -5,7 +5,7 @@ with open('README.md') as fh:
 
 
 setup(name='pysolrq',
-      version='1.0.1',
+      version='1.0.2',
       author='Diwanshu Shekhar',
       author_email='diwanshu@gmail.com',
       url='https://github.com/DiwanshuShekhar/solrq',
