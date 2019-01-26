@@ -354,22 +354,24 @@ class SolrControl(SolrClient):
                                            fields=fields,
                                            unique_id=unique_id,
                                            keep_row=keep_row)
-                for data in data_gen:
-                    pool.apply_async(self._post_to_collection, args=(data,))
-                    self._post_to_collection(data)
-                    #print(data)
+                with requests.Session() as sess:
+                    for data in data_gen:
+                        pool.apply_async(self._post_to_collection, args=(data, sess))
+
                 pool.close()
                 pool.join()
             else:
                 raise "csv file_format must have not None delimiter"
 
-    def _post_to_collection(self, data):
+    def _post_to_collection(self, data_and_sess):
         """Given the ``data`` in Solr acceptable xml format posts the data
         to the Solr Collection
         """
+        data = data_and_sess[0]
+        sess = data_and_sess[1]
         url = self.host + self.collection + "/update/"
         headers = {'Content-type': 'text/xml'}
-        requests.post(url, data=data, headers=headers)
+        sess.post(url, data=data, headers=headers)
 
     def _xmltostr(self, file_path):
         """Reads a solrxml file and converts it to a string
