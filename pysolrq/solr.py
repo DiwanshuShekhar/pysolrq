@@ -366,10 +366,9 @@ class SolrControl(SolrClient):
         """Given the ``data`` in Solr acceptable xml format posts the data
         to the Solr Collection
         """
-        with requests.Session as sess:
-            url = self.host + self.collection + "/update/"
-            headers = {'Content-type': 'text/xml'}
-            sess.post(url, data=data, headers=headers)
+        url = self.host + self.collection + "/update/"
+        headers = {'Content-type': 'text/xml'}
+        requests.post(url, data=data, headers=headers)
 
     def _xmltostr(self, file_path):
         """Reads a solrxml file and converts it to a string
