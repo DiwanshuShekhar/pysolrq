@@ -303,6 +303,7 @@ class SolrControl(SolrClient):
         self.unique_id = None
         self.keep_row = None
         self.delimiter = None
+        self.cleaner_func = None
 
     def make_collection(self, num_shards):
         """Makes a new collection
@@ -324,7 +325,8 @@ class SolrControl(SolrClient):
         print(response)
 
     def start_index(self, file_path_or_spark_df, file_format='solrxml',
-                    delimiter=None, fields=None, unique_id=True, keep_row=False):
+                    delimiter=None, fields=None, unique_id=True, keep_row=False,
+                    cleaner_func=None):
         """Indexes data to the collection
 
         Parameters
@@ -335,9 +337,9 @@ class SolrControl(SolrClient):
             Available choices are 'solrxml' or 'csv'.
         delimiter : str
             Required when file_format='csv'. Example: ``","``
-        fields : list of str.
+        fields : tuple of str.
             A list of field names to be used for indexing
-            Example: ``['field1', 'field3']``
+            Example: ``('field1', 'field2')``
         unique_id : bool
             If True, autogenerates a field name id and a unique uuid value to the doc
             If False, modify the Solr config so that id is not a unique key
@@ -371,21 +373,34 @@ class SolrControl(SolrClient):
             self.unique_id = unique_id
             self.keep_row = keep_row
             self.delimiter = delimiter
-            data_rdd = file_path_or_spark_df.map(self._transform)
+            self.cleaner_func = cleaner_func
+            sc = file_path_or_spark_df.context
+            broadcast_fields = sc.broadcast(fields)
+            data_rdd = file_path_or_spark_df.map(lambda line: self._transform(line, broadcast_fields))
             print(data_rdd.take(2))
             data_rdd.foreach(self._post_to_collection)
 
-    def _transform(self, line):
+    def _transform(self, line, *args):
 
         values = line.strip().split(self.delimiter)
+        flds = list(args[0].value)
+
+        if self.cleaner_func is not None:
+            values_cleaned = [self.cleaner_func(v) for v in values]
+            new_field_names = [f+'_clean' for f in flds]
 
         if self.keep_row:
-            self.fields.append("row")
-
-        if self.keep_row:
+            flds.append("row")
             values.append(self.delimiter.join(values))
 
-        data = self._get_data(values, self.fields, unique_id=self.unique_id)
+        if self.cleaner_func is not None:
+            for v in values_cleaned:
+                values.append(v)
+
+            for d in new_field_names:
+                flds.append(d)
+
+        data = self._get_data(values, flds, unique_id=self.unique_id)
         return data
 
     def _post_to_collection(self, data):
@@ -426,9 +441,9 @@ class SolrControl(SolrClient):
             A delimited file
         delimiter : str
             Example: ``","``
-        fields : list of str.
+        fields : tuple of str.
             A list of field names to be used for indexing
-            Example: ``['field1', 'field3']``
+            Example: ``('field1', 'field3')``
 
         Yields
         -------
@@ -452,8 +467,9 @@ class SolrControl(SolrClient):
 
                 assuming the given fields are ``["food", "talk"]``
         """
+        flds = list(fields)
         if keep_row:
-            fields.append("row")
+            flds.append("row")
 
         csv_gen = self._csv_iter(file_path, delimiter=delimiter)
         for values in csv_gen:
@@ -462,7 +478,7 @@ class SolrControl(SolrClient):
             if keep_row:
                 values.append(delimiter.join(values))
 
-            data = self._get_data(values, fields, unique_id=unique_id)
+            data = self._get_data(values, flds, unique_id=unique_id)
             yield data
 
     def _csv_iter(self, filename, delimiter=','):
