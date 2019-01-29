@@ -2,7 +2,6 @@ import requests
 import csv
 import uuid
 import multiprocessing as mp
-import time
 
 
 class SolrClient(object):
@@ -300,6 +299,11 @@ class SolrControl(SolrClient):
         SolrClient.__init__(self, host)
         self.collection = collection
 
+        self.fields = None
+        self.unique_id = None
+        self.keep_row = None
+        self.delimiter = None
+
     def make_collection(self, num_shards):
         """Makes a new collection
         This assumes that the user has already uploaded the
@@ -319,7 +323,7 @@ class SolrControl(SolrClient):
         response = requests.get(url)
         print(response)
 
-    def start_index(self, file_path, file_format='solrxml',
+    def start_index(self, file_path_or_spark_df, file_format='solrxml',
                     delimiter=None, fields=None, unique_id=True, keep_row=False):
         """Indexes data to the collection
 
@@ -342,15 +346,15 @@ class SolrControl(SolrClient):
         -------
             None
         """
-        pool = mp.Pool()  # if processes argument is None, it will use cpu_count
 
         if file_format == 'solrxml':
-            data = self._xmltostr(file_path)
+            data = self._xmltostr(file_path_or_spark_df)
             self._post_to_collection(data)
 
         if file_format == 'csv':
+            pool = mp.Pool()  # if processes argument is None, it will use cpu_count
             if delimiter is not None and fields is not None:
-                data_gen = self._data_iter(file_path, delimiter=delimiter,
+                data_gen = self._data_iter(file_path_or_spark_df, delimiter=delimiter,
                                            fields=fields,
                                            unique_id=unique_id,
                                            keep_row=keep_row)
@@ -361,6 +365,28 @@ class SolrControl(SolrClient):
                 pool.join()
             else:
                 raise "csv file_format must have not None delimiter"
+
+        if file_format == 'spark_rdd':
+            self.fields = fields
+            self.unique_id = unique_id
+            self.keep_row = keep_row
+            self.delimiter = delimiter
+            data_rdd = file_path_or_spark_df.map(self._transform)
+            print(data_rdd.take(2))
+            data_rdd.foreach(self._post_to_collection)
+
+    def _transform(self, line):
+
+        values = line.strip().split(self.delimiter)
+
+        if self.keep_row:
+            self.fields.append("row")
+
+        if self.keep_row:
+            values.append(self.delimiter.join(values))
+
+        data = self._get_data(values, self.fields, unique_id=self.unique_id)
+        return data
 
     def _post_to_collection(self, data):
         """Given the ``data`` in Solr acceptable xml format posts the data
@@ -434,7 +460,7 @@ class SolrControl(SolrClient):
             values = self._clean(values)
 
             if keep_row:
-                values.append("|".join(values))
+                values.append(delimiter.join(values))
 
             data = self._get_data(values, fields, unique_id=unique_id)
             yield data
