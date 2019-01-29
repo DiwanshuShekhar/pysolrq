@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 with open('README.md') as fh:
     long_description = fh.read()
@@ -11,7 +11,6 @@ setup(name='pysolrq',
       url='https://github.com/DiwanshuShekhar/solrq',
       description ='Extremely lightweight package to query Apache Solr indexes',
       long_description=long_description,
-      requires=['requests'],
-      packages=['pysolrq'],
-      #py_modules=['solr'],
+      requires=['requests', 'pyspark'],
+      packages=['pysolrq']
       )
