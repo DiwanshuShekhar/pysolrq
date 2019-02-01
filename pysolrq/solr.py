@@ -325,8 +325,8 @@ class SolrControl(SolrClient):
         print(response)
 
     def start_index(self, file_path_or_spark_df, file_format='solrxml',
-                    delimiter=None, fields=None, unique_id=True, keep_row=False,
-                    cleaner_func=None):
+                    delimiter=None, fields=None, unique_id=True, 
+		    batch_size=1, keep_row=False, cleaner_func=None):
         """Indexes data to the collection
 
         Parameters
@@ -376,13 +376,32 @@ class SolrControl(SolrClient):
             self.cleaner_func = cleaner_func
             sc = file_path_or_spark_df.context
             broadcast_fields = sc.broadcast(fields)
-            data_rdd = file_path_or_spark_df.map(lambda line: self._transform(line, broadcast_fields))
+	    print("Count of original df", file_path_or_spark_df.count())
+	    data_rdd_part = file_path_or_spark_df.partitionBy(int(file_path_or_spark_df.count()/batch_size))
+	    print("Count of partioned df", data_rdd_part.count())
+            data_rdd = data_rdd_part.mapPartitions(lambda part: self._transform_partition(part, broadcast_fields))
             print(data_rdd.take(2))
             data_rdd.foreach(self._post_to_collection)
 
+    def _transform_partition(partition, *args):
+        document =  ""
+        for line in partition:
+            document = document + self._transform(line, args)
+
+        return "<add>" + document + "</add>"	
+       
     def _transform(self, line, *args):
 
         values = line.strip().split(self.delimiter)
+
+        for idx, v in enumerate(values):
+            if v == '':
+                v = 'UNKNOWN'
+
+            text = re.sub('[&]', '&amp;', v)
+            text = re.sub('[<]', '&lt;', text)
+            values[idx] = re.sub('[>]', '&gt;', text)
+
         flds = list(args[0].value)
 
         if self.cleaner_func is not None:
@@ -520,7 +539,7 @@ class SolrControl(SolrClient):
         d = {}
         for idx, value in enumerate(values):
             d[fields[idx]] = value
-        return "<add>" + self._get_doc(d, unique_id=unique_id) + "</add>"
+        return self._get_doc(d, unique_id=unique_id)
 
     def _get_doc(self, d, unique_id=True):
         """Given a dictionary of  fields and values, returns an str
