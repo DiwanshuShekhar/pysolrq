@@ -549,7 +549,7 @@ class SolrControl(SolrClient):
             try:
                 docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
             except UnicodeEncodeError:
-                docs = docs + "<field name='{0}'>{1}</field>".format(k, v.encode('utf-8'))
+                docs = docs + "<field name='{0}'>{1}</field>".format(k, v.encode('utf-8').decode('utf-8'))
 
         docs = "<doc>" + docs + "</doc>"
         return docs
