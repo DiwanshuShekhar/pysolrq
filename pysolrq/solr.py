@@ -546,7 +546,10 @@ class SolrControl(SolrClient):
             docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
 
         for k, v in d.items():
-            docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
+            try:
+                docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
+            except UnicodeEncodeError:
+                docs = docs + "<field name='{0}'>{1}</field>".format(k, v.encode('utf-8').decode())
 
         docs = "<doc>" + docs + "</doc>"
         return docs
