@@ -2,6 +2,7 @@ import requests
 import csv
 import uuid
 import multiprocessing as mp
+import re
 
 
 class SolrClient(object):
@@ -326,7 +327,7 @@ class SolrControl(SolrClient):
 
     def start_index(self, file_path_or_spark_df, file_format='solrxml',
                     delimiter=None, fields=None, unique_id=True, 
-		    batch_size=1, keep_row=False, cleaner_func=None):
+                    batch_size=1, keep_row=False, cleaner_func=None):
         """Indexes data to the collection
 
         Parameters
@@ -369,40 +370,30 @@ class SolrControl(SolrClient):
                 raise "csv file_format must have not None delimiter"
 
         if file_format == 'spark_rdd':
-            self.fields = fields
             self.unique_id = unique_id
             self.keep_row = keep_row
             self.delimiter = delimiter
             self.cleaner_func = cleaner_func
-            sc = file_path_or_spark_df.context
-            broadcast_fields = sc.broadcast(fields)
-	    print("Count of original df", file_path_or_spark_df.count())
-	    data_rdd_part = file_path_or_spark_df.partitionBy(int(file_path_or_spark_df.count()/batch_size))
-	    print("Count of partioned df", data_rdd_part.count())
-            data_rdd = data_rdd_part.mapPartitions(lambda part: self._transform_partition(part, broadcast_fields))
-            print(data_rdd.take(2))
+            #print("original df", file_path_or_spark_df.count())
+            data_rdd_part = file_path_or_spark_df.repartition(int(file_path_or_spark_df.count()/batch_size))
+            #print("partioned df", data_rdd_part.glom().collect())
+            data_rdd = data_rdd_part.mapPartitions(lambda part: self._transform_partition(part, fields))
+            #print("take 2:", data_rdd.collect())
+            #print("Count of partioned df after map", data_rdd.collect())
             data_rdd.foreach(self._post_to_collection)
 
-    def _transform_partition(partition, *args):
-        document =  ""
+    def _transform_partition(self, partition, fields):
+        document = ""
         for line in partition:
-            document = document + self._transform(line, args)
+            document = document + self._transform(line, fields)
 
-        return "<add>" + document + "</add>"	
+        document = "<add>" + document + "</add>"
+        yield document
        
-    def _transform(self, line, *args):
-
+    def _transform(self, line, fields):
         values = line.strip().split(self.delimiter)
 
-        for idx, v in enumerate(values):
-            if v == '':
-                v = 'UNKNOWN'
-
-            text = re.sub('[&]', '&amp;', v)
-            text = re.sub('[<]', '&lt;', text)
-            values[idx] = re.sub('[>]', '&gt;', text)
-
-        flds = list(args[0].value)
+        flds = list(fields)
 
         if self.cleaner_func is not None:
             values_cleaned = [self.cleaner_func(v) for v in values]
@@ -411,6 +402,14 @@ class SolrControl(SolrClient):
         if self.keep_row:
             flds.append("row")
             values.append(self.delimiter.join(values))
+
+        for idx, v in enumerate(values):
+            if v == '':
+                v = 'UNKNOWN'
+
+            text = re.sub('[&]', '&amp;', v)
+            text = re.sub('[<]', '&lt;', text)
+            values[idx] = re.sub('[>]', '&gt;', text)
 
         if self.cleaner_func is not None:
             for v in values_cleaned:
@@ -550,7 +549,7 @@ class SolrControl(SolrClient):
             docs = "<field name='id'>{0}</field>".format(uuid.uuid4())
 
         for k, v in d.items():
-            docs = docs + "<field name='{0}'>{1}</field>".format(k, v.encode('utf-8'))
+            docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
 
         return "<doc>" + docs + "</doc>"
 
