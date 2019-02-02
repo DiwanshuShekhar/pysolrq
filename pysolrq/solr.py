@@ -374,12 +374,14 @@ class SolrControl(SolrClient):
             self.keep_row = keep_row
             self.delimiter = delimiter
             self.cleaner_func = cleaner_func
-            #print("original df", file_path_or_spark_df.count())
+            print("original df count", file_path_or_spark_df.count())
             data_rdd_part = file_path_or_spark_df.repartition(int(file_path_or_spark_df.count()/batch_size))
-            #print("partioned df", data_rdd_part.glom().collect())
+            partioned = data_rdd_part.glom().collect()
+            counts = [len(p) for p in partioned]
+            print("member counts", counts)
             data_rdd = data_rdd_part.mapPartitions(lambda part: self._transform_partition(part, fields))
             #print("take 2:", data_rdd.collect())
-            #print("Count of partioned df after map", data_rdd.collect())
+            print("Count of partioned df after map", data_rdd.count())
             data_rdd.foreach(self._post_to_collection)
 
     def _transform_partition(self, partition, fields):
@@ -426,8 +428,8 @@ class SolrControl(SolrClient):
         to the Solr Collection
         """
         url = self.host + self.collection + "/update/"
-        headers = {'Content-type': 'text/xml'}
-        requests.post(url, data=data, headers=headers)
+        headers = {'Content-Type': 'text/xml; charset=utf-8'}
+        requests.post(url, data=data.encode('utf-8'), headers=headers)
 
     def _xmltostr(self, file_path):
         """Reads a solrxml file and converts it to a string
@@ -551,7 +553,8 @@ class SolrControl(SolrClient):
         for k, v in d.items():
             docs = docs + "<field name='{0}'>{1}</field>".format(k, v)
 
-        return "<doc>" + docs + "</doc>"
+        docs = "<doc>" + docs + "</doc>"
+        return docs
 
     def _clean(self, values):
         """Cleans the data in ``values``
