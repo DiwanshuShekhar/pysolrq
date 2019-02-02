@@ -374,14 +374,9 @@ class SolrControl(SolrClient):
             self.keep_row = keep_row
             self.delimiter = delimiter
             self.cleaner_func = cleaner_func
-            print("original df count", file_path_or_spark_df.count())
+
             data_rdd_part = file_path_or_spark_df.repartition(int(file_path_or_spark_df.count()/batch_size))
-            partioned = data_rdd_part.glom().collect()
-            counts = [len(p) for p in partioned]
-            print("member counts", counts)
             data_rdd = data_rdd_part.mapPartitions(lambda part: self._transform_partition(part, fields))
-            #print("take 2:", data_rdd.collect())
-            print("Count of partioned df after map", data_rdd.count())
             data_rdd.foreach(self._post_to_collection)
 
     def _transform_partition(self, partition, fields):
